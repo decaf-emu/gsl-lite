@@ -1,6 +1,6 @@
 //
-// gsl-lite is based on GSL: Guidelines Support Library,
-// https://github.com/microsoft/gsl
+// gsl-lite is based on GSL: Guideline Support Library.
+// For more information see https://github.com/martinmoene/gsl-lite
 //
 // Copyright (c) 2015 Martin Moene
 // Copyright (c) 2015 Microsoft Corporation. All rights reserved. 
@@ -17,8 +17,6 @@
 
 #include "gsl-lite.t.h"
 
-namespace {
-
 CASE( "owner<>: Allows its use as the (pointer) type it stands for" )
 {
 #if gsl_HAVE_OWNER_TEMPLATE
@@ -27,7 +25,7 @@ CASE( "owner<>: Allows its use as the (pointer) type it stands for" )
     owner<int*> p = new int( 120 );
 
     EXPECT( (p != NULL) );
-    EXPECT(  p != (void*)0 );
+    EXPECT(  p != nullptr_void() );
 # if gsl_HAVE_NULLPTR
     EXPECT(  p != nullptr );
 # endif 
@@ -49,7 +47,7 @@ CASE( "Owner(): Allows its use as the (pointer) type it stands for" )
     Owner(int*) p = new int( 120 );
 
     EXPECT( (p != NULL) );
-    EXPECT(  p != (void*)0 );
+    EXPECT(  p != nullptr_void() );
 # if gsl_HAVE_NULLPTR
     EXPECT(  p != nullptr );
 # endif 
@@ -61,8 +59,6 @@ CASE( "Owner(): Allows its use as the (pointer) type it stands for" )
 #else
     EXPECT( !!"Owner() macro is not available." );
 #endif
-}
-
 }
 
 // end of file

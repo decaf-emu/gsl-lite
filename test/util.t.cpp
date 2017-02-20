@@ -1,6 +1,6 @@
 //
-// gsl-lite is based on GSL: Guidelines Support Library,
-// https://github.com/microsoft/gsl
+// gsl-lite is based on GSL: Guideline Support Library.
+// For more information see https://github.com/martinmoene/gsl-lite
 //
 // Copyright (c) 2015 Martin Moene
 // Copyright (c) 2015 Microsoft Corporation. All rights reserved.
@@ -18,11 +18,11 @@
 #include "gsl-lite.t.h"
 #include <functional>
 
-namespace {
+#define gsl_CPP11_OR_GREATER_WRT_FINAL ( gsl_CPP11_OR_GREATER || gsl_COMPILER_MSVC_VERSION >= 11 )
 
-CASE( "finally: Allows lambda to run" )
+CASE( "finally: Allows to run lambda on leaving scope" )
 {
-#if gsl_CPP11_OR_GREATER
+#if gsl_CPP11_OR_GREATER_WRT_FINAL
     struct F { static void incr( int & i ) { i += 1; } };
 
     int i = 0;
@@ -36,9 +36,9 @@ CASE( "finally: Allows lambda to run" )
 #endif
 }
 
-CASE( "finally: Allows function with bind" )
+CASE( "finally: Allows to run function (bind) on leaving scope" )
 {
-#if gsl_CPP11_OR_GREATER
+#if gsl_CPP11_OR_GREATER_WRT_FINAL
     struct F { static void incr( int & i ) { i += 1; } };
 
     int i = 0;
@@ -52,13 +52,13 @@ CASE( "finally: Allows function with bind" )
 #endif
 }
 
-int g_i = 0;
+namespace{ int g_i = 0; }
 
-CASE( "finally: Allows pointer to function" )
+CASE( "finally: Allows to run function (pointer) on leaving scope" )
 {
     struct F { static void incr() { g_i += 1; } };
 
-#if gsl_CPP11_OR_GREATER
+#if gsl_CPP11_OR_GREATER_WRT_FINAL
 
     g_i = 0;
     {
@@ -78,7 +78,7 @@ CASE( "finally: Allows pointer to function" )
 
 CASE( "finally: Allows to move final_act" )
 {
-#if gsl_CPP11_OR_GREATER
+#if gsl_CPP11_OR_GREATER_WRT_FINAL
     struct F { static void incr( int & i ) { i += 1; } };
 
     int i = 0;
@@ -117,6 +117,77 @@ CASE( "finally: Allows to move final_act" )
 #endif
 }
 
+CASE( "finally: Allows moving final_act to throw" "[.]")
+{
+#if gsl_CPP11_OR_GREATER_WRT_FINAL
+    struct action
+    {
+        int & i_;
+        void operator()(){ i_ += 1; }     
+        action( int & i ) : i_( i ) {}
+        action( action && other ) : i_( other.i_) { throw std::runtime_error("action move-ctor"); }   
+    };
+
+    int i = 0;
+    {
+        {
+            EXPECT_THROWS( finally( action( i ) ) );
+        }
+        EXPECT( i == 1 );
+    }
+
+    // ... 
+#else
+    EXPECT( !!"lambda is not available (no C++11)" );
+#endif
+}
+
+CASE( "on_return: Allows to perform action on leaving scope without exception (gsl_FEATURE_EXPERIMENTAL_RETURN_GUARD)" )
+{
+#if gsl_FEATURE_EXPERIMENTAL_RETURN_GUARD
+#if gsl_CPP11_OR_GREATER_WRT_FINAL
+    struct F { 
+        static void incr() { g_i += 1; }
+        static void pass() { try { auto _ = on_return( &F::incr ); /*throw std::exception();*/ } catch (...) {} }
+        static void fail() { try { auto _ = on_return( &F::incr );   throw std::exception();   } catch (...) {} }
+    };
+#else
+    struct F { 
+        static void incr() { g_i += 1; }
+        static void pass() { try { final_act_return _ = on_return( &F::incr ); /*throw std::exception();*/ } catch (...) {} }
+        static void fail() { try { final_act_return _ = on_return( &F::incr );   throw std::exception();   } catch (...) {} }
+    };
+#endif
+    { g_i = 0; F::pass(); EXPECT( g_i == 1 ); }
+    { g_i = 0; F::fail(); EXPECT( g_i == 0 ); }
+#else
+    EXPECT( !!"on_return not available (no gsl_FEATURE_EXPERIMENTAL_RETURN_GUARD)" );
+#endif
+}
+
+CASE( "on_error: Allows to perform action on leaving scope via an exception (gsl_FEATURE_EXPERIMENTAL_RETURN_GUARD)" )
+{
+#if gsl_FEATURE_EXPERIMENTAL_RETURN_GUARD
+#if gsl_CPP11_OR_GREATER_WRT_FINAL
+    struct F { 
+        static void incr() { g_i += 1; }
+        static void pass() { try { auto _ = on_error( &F::incr ); /*throw std::exception();*/ } catch (...) {} }
+        static void fail() { try { auto _ = on_error( &F::incr );   throw std::exception();   } catch (...) {} }
+    };
+#else
+    struct F { 
+        static void incr() { g_i += 1; }
+        static void pass() { try { final_act_error _ = on_error( &F::incr ); /*throw std::exception();*/ } catch (...) {} }
+        static void fail() { try { final_act_error _ = on_error( &F::incr );   throw std::exception();   } catch (...) {} }
+    };
+#endif
+    { g_i = 0; F::pass(); EXPECT( g_i == 0 ); }
+    { g_i = 0; F::fail(); EXPECT( g_i == 1 ); }
+#else
+    EXPECT( !!"on_error not available (no gsl_FEATURE_EXPERIMENTAL_RETURN_GUARD)" );
+#endif
+}
+
 CASE( "narrow_cast<>: Allows narrowing without value loss" )
 {
     EXPECT( narrow_cast<char>( 120 ) == 120 );
@@ -140,8 +211,6 @@ CASE( "narrow<>(): Terminates when narrowing with value loss" )
 CASE( "narrow<>(): Terminates when narrowing with sign loss" )
 {
     EXPECT_THROWS_AS( narrow<unsigned>( -42 ), narrowing_error );
-}
-
 }
 
 // end of file

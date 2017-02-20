@@ -1,6 +1,6 @@
 //
-// gsl-lite is based on GSL: Guidelines Support Library,
-// https://github.com/microsoft/gsl
+// gsl-lite is based on GSL: Guideline Support Library.
+// For more information see https://github.com/martinmoene/gsl-lite
 //
 // Copyright (c) 2015 Martin Moene
 // Copyright (c) 2015 Microsoft Corporation. All rights reserved. 
@@ -22,6 +22,8 @@ namespace {
 bool expects( bool x ) { Expects( x ); return x; } 
 bool ensures( bool x ) { Ensures( x ); return x; }
     
+}
+
 CASE( "Expects(): Allows a true expression" )
 {
     EXPECT( expects( true  ) );
@@ -40,8 +42,6 @@ CASE( "Expects(): Terminates on a false expression" )
 CASE( "Ensures(): Terminates on a false expression" )
 {
     EXPECT_THROWS( ensures( false ) );
-}
-
 }
 
 // end of file

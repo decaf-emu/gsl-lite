@@ -1,9 +1,9 @@
 // Copyright 2015 by Martin Moene
 //
-// gsl-lite is based on GSL: Guidelines Support Library,
-// https://github.com/microsoft/gsl
+// gsl-lite is based on GSL: Guideline Support Library.
+// For more information see https://github.com/martinmoene/gsl-lite
 //
-// This code is licensed under the MIT License (MIT). 
+// This code is licensed under the MIT License (MIT).
 //
 
 #pragma once
@@ -31,8 +31,16 @@ namespace std {
 namespace lest {
 #endif
 
-inline std::ostream & operator<<( std::ostream & os, std::wstring const & text  )
-{ 
+#if gsl_HAVE_ARRAY
+template< typename T, std::size_t N >
+inline std::ostream & operator<<( std::ostream & os, std::array<T,N> const & a )
+{
+    return os << std::hex << "[std::array[" << N << "]";
+}
+#endif
+
+inline std::ostream & operator<<( std::ostream & os, std::wstring const & text )
+{
 #if ! gsl_BETWEEN( gsl_COMPILER_MSVC_VERSION, 6, 7 )
     return os << std::string( text.begin(), text.end() );
 #else
@@ -47,12 +55,27 @@ inline std::ostream & operator<<( std::ostream & os, std::wstring const & text  
 #endif
 
 namespace gsl {
+    
+inline const void * nullptr_void() { return 0; }
 
 // use oparator<< instead of to_string() overload;
 // see  http://stackoverflow.com/a/10651752/437272
-inline std::ostream & operator<<( std::ostream & os, gsl::byte b )
+
+inline std::ostream & operator<<( std::ostream & os, byte b )
 {
-    return os << std::hex << "0x" << static_cast<int>(b); 
+    return os << std::hex << "0x" << to_integer<int>(b);
+}
+
+template< typename T >
+inline std::ostream & operator<<( std::ostream & os, span<T> s )
+{
+    return os << "[", std::copy( s.begin(), s.end(), std::ostream_iterator<T>(os, ",") ), os << "]";
+}
+
+template< typename T >
+inline std::ostream & operator<<( std::ostream & os, basic_string_span<T> s )
+{
+    return os << "[", std::copy( s.begin(), s.end(), std::ostream_iterator<T>(os, ",") ), os << "]";
 }
 
 } // namespace gsl
